@@ -1,0 +1,3 @@
+1. Abstract Network Type
+2. Introduce species elitism and max number of species.
+3. Add crossover rate.
