@@ -44,12 +44,18 @@ class Genome:
             self.initialize_default_genome()
 
     def __repr__(self) -> str:
-        nodes_from_links = set()
-        for l in self.links.values():
-            nodes_from_links.add(l.in_node)
-            nodes_from_links.add(l.out_node)
+        strings = []
+        strings.append(f"Genome {self.id}")
 
-        return f"Genome(ID={self.id}, nodes={list(self.nodes.keys())}, nodes_from_links={list(nodes_from_links)}, links={list(self.links.keys())})"
+        strings.append(f"Nodes:")
+        for node in self.nodes.values():
+            strings.append(f"    {node}")
+
+        strings.append(f"Links:")
+        for link in self.links.values():
+            strings.append(f"    {link}")
+
+        return "\n".join(strings)
 
     def initialize_default_genome(self):
         input_nodes: dict[int, Node] = {}
@@ -149,21 +155,13 @@ class Genome:
         if not hidden_nodes:
             return
 
-        node = random.choice(hidden_nodes)
-        self.links = {
-            k: l for k, l in self.links.items() if node.id not in l.simple_link
-        }
-
-        link_nodes = set()
-        for i in self.links.values():
-            link_nodes.add(i.in_node)
-            link_nodes.add(i.out_node)
-
-        self.nodes.pop(node.id)
+        node_id = random.choice(hidden_nodes)
+        self.links = {k: l for k, l in self.links.items() if node_id not in l.simple_link}
+        self.nodes.pop(node_id)
 
     def mutate_add_link(self):
-        in_nodes = [n for n in self.nodes.values() if n.node_type != NodeType.OUTPUT]
-        out_nodes = [n for n in self.nodes.values() if n.node_type != NodeType.INPUT]
+        in_nodes = [k for k, n in self.nodes.items() if n.node_type != NodeType.OUTPUT]
+        out_nodes = [k for k, n in self.nodes.items() if n.node_type != NodeType.INPUT]
 
         in_node = random.choice(in_nodes)
         out_node = random.choice(out_nodes)
@@ -171,17 +169,20 @@ class Genome:
         if in_node == out_node:
             return
 
+        new_link = (in_node, out_node)
         for link in self.links.values():
-            if link.simple_link == (in_node.id, out_node.id):
+            if link.simple_link == new_link:
+                # TODO sometimes freezes, probably cycle?
+                if self.params.alternative_structural_mutations:
+                    link.enable()
                 return
 
-        if creates_cycle(
-            [l.simple_link for l in self.links.values()], (in_node.id, out_node.id)
+        if self.params.feed_forward and creates_cycle(
+            [l.simple_link for l in self.links.values()], new_link
         ):
             return
 
-        link = self.create_new_link(in_node.id, out_node.id)
-
+        link = self.create_new_link(*new_link)
         assert link.id not in self.links
         self.links[link.id] = link
 
@@ -189,7 +190,7 @@ class Genome:
         if not self.links:
             return
 
-        link = get_random_value(self.links)
+        link: Link = get_random_value(self.links)
         self.links.pop(link.id)
 
     def mutate_toggle_enable(self):
@@ -251,8 +252,10 @@ class Genome:
         if random.random() < self.params.weight_severe_mutation_chance:
             mutation_power *= 2
 
+        weight_change = random.gauss(0.0, mutation_power)
+
         link.traits.weight = utils.clamp(
-            link.weight + utils.randon_sign() * random.random() * mutation_power,
+            link.traits.weight + weight_change,
             self.params.weight_min_value,
             self.params.weight_max_value,
         )
@@ -278,8 +281,8 @@ class Genome:
     def get_node_id(self, link_to_split: LinkID) -> int:
         return self.innov_record.get_node_id(link_to_split)
 
-    def get_nodes_by_type(self, node_type: NodeType) -> list[Node]:
-        return [n for n in self.nodes.values() if n.node_type == node_type]
+    def get_nodes_by_type(self, node_type: NodeType) -> list[NodeID]:
+        return [k for k, n in self.nodes.items() if n.node_type == node_type]
 
     def get_default_node_traits(self) -> NodeTraits:
         return NodeTraits(
@@ -323,8 +326,7 @@ class Genome:
 
 
 def creates_cycle(connections: list[tuple[int, int]], test: tuple[int, int]):
-    """
-    Returns true if the addition of the 'test' connection would create a cycle,
+    """Returns true if the addition of the 'test' connection would create a cycle,
     assuming that no cycle already exists in the graph represented by 'connections'.
     """
     i, o = test

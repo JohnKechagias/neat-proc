@@ -60,6 +60,12 @@ class Graph:
         self.in_degrees.pop(node)
 
     def add_link(self, input: NodeID, output: NodeID, weight: float):
+        if input not in self.graph:
+            raise NodeNotFoundError(f"The input node {input} is not in the graph.")
+
+        if output not in self.graph:
+            raise NodeNotFoundError(f"The output node {output} is not in the graph.")
+
         self.graph[input].add_neighbor(output, weight)
         self.in_degrees[output] += 1
 
@@ -106,12 +112,19 @@ class Graph:
             num_of_visited_nodes += 1
 
         if num_of_visited_nodes != len(self.graph):
+            print(f"Current path: {stack}")
+            print(f"All nodes: {self.graph.keys()}")
+            print(f"In degrees: {in_degree}")
+            print(f"Original in degrees: {self.in_degrees}")
+            print(f"Num of visited nodes: {num_of_visited_nodes}")
+            print(f"Connections: {self.graph.values()}")
+            print(f"Ordered list: {ordered}")
             raise CycleFoundError("Tried to topologically sort a cyclic graph.")
 
         return ordered
 
 
-def get_required_nodes(
+def get_required_hidden_nodes(
     inputs: list[NodeID],
     outputs: list[NodeID],
     hidden_nodes: list[NodeID],
@@ -155,7 +168,7 @@ def get_required_nodes(
                 if node not in non_hidden_nodes:
                     required.add(node)
 
-    return list(required.union(non_hidden_nodes))
+    return list(required)
 
 
 def find_path(

@@ -104,6 +104,7 @@ class GenomeParams(ConfigSection):
 
     feed_forward: bool
     connection_scheme: ConnectionSchemes
+    alternative_structural_mutations: bool
 
     activation_default: ActivationFuncs
     activation_options: list[ActivationFuncs]

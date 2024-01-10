@@ -30,6 +30,7 @@ class Reporter:
     _header_width: int = 50
     _num_of_extinctions: int = 0
     _generation_times: list[float] = []
+    _stagnation = 0
 
     @classmethod
     def initialize_training(cls, params: Parameters):
@@ -78,19 +79,22 @@ class Reporter:
             cls.logger.info(f"  {id:>4}  {age:>3}  {size:>4}  {f:>9}  {stag:>4}")
 
         cls.logger.info("")
+        cls.logger.info(f"Stagnations: {cls._stagnation}")
 
     @classmethod
     def best_genome(cls, genome: Genome, species: int):
         cls.logger.info("")
-        cls.logger.info(f"Best genome is {genome.id} from species {species} with complexity {genome.size}")
+        cls.logger.info(
+            f"Best genome is {genome.id} from species {species} with complexity {genome.size}"
+        )
         cls.logger.info("")
 
     @classmethod
     def stagnant_species(cls, species: int, size: int):
+        cls._stagnation += 1
         if cls.show_species_details:
             cls.logger.info(
-                f"\nSpecies {species} with {size} members is stangant. "
-                "Removing it."
+                f"\nSpecies {species} with {size} members is stangant. " "Removing it."
             )
 
     @classmethod

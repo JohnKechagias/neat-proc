@@ -28,7 +28,7 @@ def fitness_func(genome: neat.Genome, data) -> float:
         output = np.asarray(network.activate(input))
         loss += least_squares(output, correct_output)
 
-    return max(4.0 - loss, 0)
+    return 4.0 - loss
 
 
 def main():
@@ -37,20 +37,20 @@ def main():
     params = neat.Parameters(config_file)
     population = neat.Population(params)
 
-    input = [
+    inputs = [
         ([0.0, 0.0], [0.0]),
         ([0.0, 1.0], [1.0]),
         ([1.0, 0.0], [1.0]),
         ([1.0, 1.0], [0.0]),
     ]
 
-    genome = population.run(fitness_func, input, 300)
+    genome = population.run(fitness_func, inputs, 300)
     print(f"The best genome is {genome.id} with fitness {genome.fitness:.3f}.")
     winner_net = neat.FeedForwardNetwork.from_genome(genome)
-    input_element = input[1][0]
-    output = winner_net.activate(input_element)
-    print(f"Input: {input_element}")
-    print(f"Output: {output}")
+
+    for i in inputs:
+        output = winner_net.activate(i[0])
+        print(f"{i[0]} -> {output}")
 
 
 if __name__ == "__main__":

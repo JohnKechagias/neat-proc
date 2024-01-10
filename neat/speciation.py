@@ -2,11 +2,11 @@ from neat.genomes.genome import Genome
 from neat.parameters import SpeciationParams
 
 
-def are_genomes_compatible(
+def get_genomes_distance(
     genome1: Genome,
     genome2: Genome,
     params: SpeciationParams,
-) -> bool:
+) -> float:
     node_distance: float = 0.0
     disjoint_nodes: int = 0
     num_of_common_node_genes: int = 0
@@ -43,5 +43,13 @@ def are_genomes_compatible(
             link_distance + params.compatibility_disjoint_coefficient * disjoint_links
         ) / max_links
 
-    genomes_distance = node_distance + link_distance
-    return genomes_distance < params.compatibility_threshold
+    return node_distance + link_distance
+
+
+def are_genomes_compatible(
+    genome1: Genome,
+    genome2: Genome,
+    params: SpeciationParams,
+) -> bool:
+    distance = get_genomes_distance(genome1, genome2, params)
+    return distance < params.compatibility_threshold

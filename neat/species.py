@@ -1,13 +1,11 @@
 from __future__ import annotations
 
-import random
 from dataclasses import dataclass
 from math import ceil
-from typing import Optional
 
 from neat.genomes.genome import Genome
 from neat.parameters import SpeciationParams
-from neat.speciation import are_genomes_compatible
+from neat.speciation import get_genomes_distance
 
 
 @dataclass
@@ -68,13 +66,8 @@ class Species:
     def representative(self, value: Genome):
         self.info.representative = value
 
-    def try_assign_genome(self, genome: Genome, params: SpeciationParams) -> bool:
-        is_compatible = are_genomes_compatible(self.representative, genome, params)
-
-        if is_compatible:
-            self.genomes.append(genome)
-
-        return is_compatible
+    def get_distance(self, genome: Genome, params: SpeciationParams) -> float:
+        return get_genomes_distance(self.representative, genome, params)
 
     def force_assign_genome(self, genome: Genome):
         self.genomes.append(genome)
@@ -98,20 +91,13 @@ class Species:
 
         fitness = 0.0 if not self.genomes else fitness_sum / self.size**2
 
-        if fitness < self.fitness:
+        if fitness <= self.fitness:
             self.stagnant += 1
         else:
             self.stagnant = 0
 
         self.fitness = fitness
         return fitness
-
-    def mate(self, parent2: Optional[Genome] = None) -> Genome:
-        parent1 = random.choice(self.genomes)
-        if parent2 is None:
-            parent2 = random.choice(self.genomes)
-
-        return parent1.crossover(parent2)
 
     def elites(self, count: int) -> list[Genome]:
         return self.genomes[:count]

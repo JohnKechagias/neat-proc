@@ -9,7 +9,10 @@ from neat.species import Species
 from neat.utils import mean
 
 
-def reproduce(species_set: list[Species], params: ReproductionParams) -> list[Genome]:
+def filter_stagnant_species(
+    species_set: list[Species],
+    params: ReproductionParams
+) -> list[Species]:
     is_stagnant = lambda s: s.stagnant > params.max_stagnation
     remaining_species: list[Species] = []
     for species in species_set:
@@ -24,10 +27,13 @@ def reproduce(species_set: list[Species], params: ReproductionParams) -> list[Ge
             "There are no remaining species after evolution. "
             "Consider increasing the compatibility threshold."
         )
-        return []
 
+    return remaining_species
+
+
+def reproduce(species_set: list[Species], params: ReproductionParams) -> list[Genome]:
     offspring: list[Genome] = []
-    for species in remaining_species:
+    for species in species_set:
         species.sort_genomes_by_fitness()
         species.kill_worst(params.survival_rate)
 
@@ -37,24 +43,27 @@ def reproduce(species_set: list[Species], params: ReproductionParams) -> list[Ge
     genomes_to_spawn = params.population - len(offspring)
     offspring_per_species = compute_offspring_num(species_set, genomes_to_spawn)
 
-    for species, offspring_num in zip(remaining_species, offspring_per_species):
+    for species, offspring_num in zip(species_set, offspring_per_species):
         for _ in range(offspring_num):
+            parent1 = random.choice(species.genomes)
+
             if random.random() < params.crossover_rate:
-                parent2 = None
+                parent2 = random.choice(species.genomes)
+
                 if random.random() < params.inter_species_crossover_rate:
-                    species_of_parent2 = random.choice(remaining_species)
+                    species_of_parent2 = random.choice(species_set)
                     parent2 = random.choice(species_of_parent2.genomes)
-                child = species.mate(parent2)
+
+                child = parent1.crossover(parent2)
             else:
-                parent = random.choice(species.genomes)
-                id = parent.innov_record.get_genome_id()
+                id = parent1.innov_record.get_genome_id()
                 # We need to copy nodes and links because if the parent is an elite it will be transfered
                 # into the next generation and when we mutate him we will also mutate the child by mistake.
                 child = Genome(
                     id,
-                    parent.innov_record,
-                    copy.copy(parent.nodes),
-                    copy.copy(parent.links),
+                    parent1.innov_record,
+                    copy.copy(parent1.nodes),
+                    copy.copy(parent1.links),
                 )
                 child.mutate()
 

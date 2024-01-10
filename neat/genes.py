@@ -54,6 +54,9 @@ class Node:
     traits: NodeTraits
     node_type: NodeType
 
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(ID={self.id}, bias={self.traits.bias}, response={self.traits.response}, aggregator={self.traits.aggregator}, activator={self.traits.activator})"
+
     def distance(self, other: Node) -> float:
         return self.traits.distance(other.traits)
 
@@ -130,6 +133,9 @@ class Link:
     in_node: NodeID
     out_node: NodeID
     traits: LinkTraits
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(ID={self.id}, ({self.in_node} -> {self.out_node}), weight={self.weight}, enabled={self.enabled})"
 
     @property
     def enabled(self) -> bool:

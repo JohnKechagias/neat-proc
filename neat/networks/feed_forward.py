@@ -1,16 +1,33 @@
 from __future__ import annotations
 
 import numpy as np
+from neat.genes import NodeType
 
 from neat.genomes.genome import Genome
 
 from .network import Network
+from .utils import get_feed_forward_layers
 
 
 class FeedForwardNetwork(Network):
     @staticmethod
     def from_genome(genome: Genome) -> FeedForwardNetwork:
-        return FeedForwardNetwork(genome.id, genome.nodes, genome.links)
+        input_nodes = genome.get_nodes_by_type(NodeType.INPUT)
+        output_nodes = genome.get_nodes_by_type(NodeType.OUTPUT)
+        links = [l for l in genome.links.values() if l.enabled]
+        slinks = [l.simple_link for l in links]
+
+        layers = get_feed_forward_layers(input_nodes, output_nodes, slinks)
+        node_evals = []
+        for layer in layers:
+            for node in layer:
+                inputs = []
+                for link in [l for l in links if l.out_node == node]:
+                    inputs.append((link.in_node, link.weight))
+
+                node_evals.append((node, genome.nodes[node].get_evaluator(), inputs))
+
+        return FeedForwardNetwork(genome.id, input_nodes, output_nodes, node_evals)
 
     def activate(self, input: np.ndarray) -> list[float]:
         if len(input) != len(self.inputs):
@@ -19,14 +36,13 @@ class FeedForwardNetwork(Network):
             )
 
         for node, value in zip(self.inputs, input):
-            self.node_values[node] = value
+            self.values[node] = value
 
-        for node_id in self.graph.toposort():
-            evaluator = self.node_evaluators[node_id]
-            output = evaluator(self.node_inputs[node_id])
-            self.node_values[node_id] = output
+        for node, evaluator, links in self.evaluators:
+            node_inputs = []
+            for neighbor, weight in links:
+                node_inputs.append(self.values[neighbor] * weight)
 
-            for neighbor, weight in self.graph.get_neighbors(node_id).items():
-                self.node_inputs[neighbor].append(output * weight)
+            self.values[node] = evaluator(node_inputs)
 
-        return [v for node, v in self.node_values.items() if node in self.outputs]
+        return [self.values[node] for node in self.outputs]
