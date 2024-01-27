@@ -1,20 +1,19 @@
 from __future__ import annotations
 
 import random
-from dataclasses import dataclass
 from typing import Optional
 
-import neat.utils as utils
-from neat.genes import Link, LinkTraits, Node, NodeTraits, NodeType
+from neat.genes import Link, Node, NodeType
 from neat.innovation import InnovationRecord
 from neat.parameters import GenomeParams
-from neat.types import LinkID, NodeID
+from neat.types import LinkID, NodeID, SLink
 from neat.utils import get_random_value
 
 
-@dataclass
 class Genome:
     params: GenomeParams
+    input_keys = set((0, 1))
+    output_keys = set((2,))
 
     @classmethod
     def initialize_configuration(cls, params: GenomeParams):
@@ -27,6 +26,7 @@ class Genome:
         nodes: Optional[dict[int, Node]] = None,
         links: Optional[dict[int, Link]] = None,
     ):
+        self.parents = None
         if not nodes:
             nodes = {}
 
@@ -40,12 +40,12 @@ class Genome:
         self.nodes: dict[NodeID, Node] = nodes
         self.links: dict[LinkID, Link] = links
 
-        if not nodes and not links:
+        if not self.nodes and not self.links:
             self.initialize_default_genome()
 
     def __repr__(self) -> str:
         strings = []
-        strings.append(f"Genome {self.id}")
+        strings.append(f"\nGenome {self.id}")
 
         strings.append(f"Nodes:")
         for node in self.nodes.values():
@@ -64,19 +64,18 @@ class Genome:
         inputs = self.params.inputs
         outputs = self.params.outputs
         for node_id in range(inputs):
-            traits = self.get_default_node_traits()
-            node = Node(node_id, traits, NodeType.INPUT)
-            input_nodes[node.id] = node
+            node = self.create_new_node(node_id, NodeType.INPUT)
+            input_nodes[node_id] = node
 
         for node_id in range(inputs, inputs + outputs):
-            traits = self.get_default_node_traits()
-            node = Node(node_id, traits, NodeType.OUTPUT)
-            output_nodes[node.id] = node
+            node = self.create_new_node(node_id, NodeType.OUTPUT)
+            output_nodes[node_id] = node
 
-        for input in input_nodes.values():
-            for output in output_nodes.values():
-                link = self.create_new_link(input.id, output.id)
-                self.links[link.id] = link
+        for input in input_nodes.keys():
+            for output in output_nodes.keys():
+                link_id = self.get_link_id(input, output)
+                link = self.create_new_link(link_id, input, output)
+                self.links[link_id] = link
 
         self.nodes = {**input_nodes, **output_nodes}
 
@@ -107,15 +106,16 @@ class Genome:
                 nodes[key] = node1.copy()
 
         id = self.innov_record.get_genome_id()
-        # print(f"Crossover: Combining Genome {primary_parent.id} with Genome {secondary_parent.id} producing Genome {id}")
-        return Genome(id, self.innov_record, nodes, links)
+        genome = Genome(id, self.innov_record, nodes, links)
+        genome.parents = (self.id, other.id)
+        return genome
 
     def mutate(self):
-        if random.random() < self.params.node_deletion_chance:
-            self.mutate_delete_node()
-
         if random.random() < self.params.node_addition_chance:
             self.mutate_add_node()
+
+        if random.random() < self.params.node_deletion_chance:
+            self.mutate_delete_node()
 
         if random.random() < self.params.link_addition_chance:
             self.mutate_add_link()
@@ -127,27 +127,33 @@ class Genome:
             self.mutate_toggle_enable()
 
         for node in self.nodes.values():
-            self.mutate_node(node)
+            node.mutate(self.params)
 
         for link in self.links.values():
-            self.mutate_link(link)
+            link.mutate(self.params)
 
     def mutate_add_node(self):
         if not self.links:
+            if self.params.alternative_structural_mutations:
+                self.mutate_add_link()
             return
 
-        link_to_split = get_random_value(self.links)
+        link_to_split: Link = get_random_value(self.links)
         link_to_split.disable()
 
-        node = self.create_new_node(link_to_split.id)
-        self.nodes[node.id] = node
+        node_id = self.get_node_id(link_to_split.id)
+        node = self.create_new_node(node_id)
+        self.nodes[node_id] = node
 
-        first_link = self.create_new_link(link_to_split.in_node, node.id)
-        self.links[first_link.id] = first_link
+        flink_id = self.get_link_id(link_to_split.in_node, node_id)
+        first_link = self.create_new_link(flink_id, link_to_split.in_node, node_id)
+        first_link.weight = 1
+        self.links[flink_id] = first_link
 
-        weight = link_to_split.weight
-        second_link = self.create_new_link(node.id, link_to_split.out_node, weight)
-        self.links[second_link.id] = second_link
+        slink_id = self.get_link_id(node_id, link_to_split.out_node)
+        second_link = self.create_new_link(slink_id, node_id, link_to_split.out_node)
+        second_link.weight = link_to_split.weight
+        self.links[slink_id] = second_link
 
     def mutate_delete_node(self):
         hidden_nodes = self.get_nodes_by_type(NodeType.HIDDEN)
@@ -156,11 +162,13 @@ class Genome:
             return
 
         node_id = random.choice(hidden_nodes)
-        self.links = {k: l for k, l in self.links.items() if node_id not in l.simple_link}
+        self.links = {
+            k: l for k, l in self.links.items() if node_id not in l.simple_link
+        }
         self.nodes.pop(node_id)
 
     def mutate_add_link(self):
-        in_nodes = [k for k, n in self.nodes.items() if n.node_type != NodeType.OUTPUT]
+        in_nodes = [k for k, _ in self.nodes.items()]
         out_nodes = [k for k, n in self.nodes.items() if n.node_type != NodeType.INPUT]
 
         in_node = random.choice(in_nodes)
@@ -177,14 +185,17 @@ class Genome:
                     link.enable()
                 return
 
-        if self.params.feed_forward and creates_cycle(
-            [l.simple_link for l in self.links.values()], new_link
-        ):
+        if in_node in self.output_keys and out_node in self.output_keys:
             return
 
-        link = self.create_new_link(*new_link)
-        assert link.id not in self.links
-        self.links[link.id] = link
+        simple_links = [l.simple_link for l in self.links.values()]
+        if self.params.feed_forward and creates_cycle(simple_links, new_link):
+            return
+
+        link_id = self.get_link_id(in_node, out_node)
+        link = self.create_new_link(link_id, in_node, out_node)
+        assert link_id not in self.links
+        self.links[link_id] = link
 
     def mutate_delete_link(self):
         if not self.links:
@@ -216,50 +227,6 @@ class Genome:
                 link_to_toggle_enable.disable()
                 return
 
-    def mutate_node(self, node: Node):
-        if random.random() < self.params.bias_mutation_chance:
-            bias_change = random.gauss(0.0, self.params.bias_mutation_power)
-            node.traits.bias = utils.clamp(
-                node.traits.bias + bias_change,
-                self.params.bias_min_value,
-                self.params.bias_max_value,
-            )
-
-        if random.random() < self.params.bias_replace_chance:
-            node.traits.bias = self.get_initial_bias()
-
-        if random.random() < self.params.response_mutation_chance:
-            response_change = random.gauss(0.0, self.params.response_mutation_power)
-            node.traits.response = utils.clamp(
-                node.traits.response + response_change,
-                self.params.response_min_value,
-                self.params.response_max_value,
-            )
-
-        if random.random() < self.params.response_replace_chance:
-            node.traits.response = self.get_initial_response()
-
-        # TODO add mutation of aggregation and activation functions.
-
-    def mutate_link(self, link: Link):
-        if link.frozen:
-            return
-
-        if not random.random() < self.params.weight_mutation_chance:
-            return
-
-        mutation_power = self.params.weight_mutation_power
-        if random.random() < self.params.weight_severe_mutation_chance:
-            mutation_power *= 2
-
-        weight_change = random.gauss(0.0, mutation_power)
-
-        link.traits.weight = utils.clamp(
-            link.traits.weight + weight_change,
-            self.params.weight_min_value,
-            self.params.weight_max_value,
-        )
-
     @property
     def size(self):
         """
@@ -269,14 +236,9 @@ class Genome:
         num_enabled_connections = sum([1 for l in self.links.values() if l.enabled])
         return len(self.nodes), num_enabled_connections
 
-    def create_new_node(
-        self,
-        link_to_split: LinkID,
-        node_type: NodeType = NodeType.HIDDEN,
-    ) -> Node:
-        id = self.get_node_id(link_to_split)
-        traits = self.get_default_node_traits()
-        return Node(id, traits, node_type)
+    def create_new_node(self, id: NodeID, ntype: NodeType = NodeType.HIDDEN) -> Node:
+        bias, response, aggregator, activator = Node.get_default_args(self.params)
+        return Node(id, ntype, bias, response, aggregator, activator)
 
     def get_node_id(self, link_to_split: LinkID) -> int:
         return self.innov_record.get_node_id(link_to_split)
@@ -284,32 +246,9 @@ class Genome:
     def get_nodes_by_type(self, node_type: NodeType) -> list[NodeID]:
         return [k for k, n in self.nodes.items() if n.node_type == node_type]
 
-    def get_default_node_traits(self) -> NodeTraits:
-        return NodeTraits(
-            self.get_initial_bias(),
-            self.get_initial_response(),
-            self.params.aggregation_default,
-            self.params.activation_default,
-        )
-
-    def get_initial_bias(self) -> float:
-        bias = random.gauss(self.params.bias_init_mean, self.params.bias_init_stdev)
-        return utils.clamp(bias, self.params.bias_min_value, self.params.bias_max_value)
-
-    def get_initial_response(self) -> float:
-        response = random.gauss(
-            self.params.response_init_mean, self.params.response_init_stdev
-        )
-        return utils.clamp(
-            response, self.params.response_min_value, self.params.response_max_value
-        )
-
-    def create_new_link(
-        self, in_node: NodeID, out_node: NodeID, weight: float = 1
-    ) -> Link:
-        id = self.get_link_id(in_node, out_node)
-        traits = LinkTraits(weight=weight)
-        return Link(id, in_node, out_node, traits)
+    def create_new_link(self, id: LinkID, in_node: NodeID, out_node: NodeID) -> Link:
+        weight, enabled, frozen = Link.get_default_args(self.params)
+        return Link(id, in_node, out_node, weight, enabled, frozen)
 
     def get_link_id(self, in_node: NodeID, out_node: NodeID) -> int:
         return self.innov_record.get_link_id(in_node, out_node)
@@ -320,12 +259,8 @@ class Genome:
                 link.enable()
                 break
 
-    def reset_weights(self):
-        for link in self.links.values():
-            link.reset_weight()
 
-
-def creates_cycle(connections: list[tuple[int, int]], test: tuple[int, int]):
+def creates_cycle(connections: list[SLink], test: SLink) -> bool:
     """Returns true if the addition of the 'test' connection would create a cycle,
     assuming that no cycle already exists in the graph represented by 'connections'.
     """

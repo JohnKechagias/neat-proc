@@ -15,7 +15,7 @@ class Network(ABC):
         id: int,
         inputs: list[NodeID],
         outputs: list[NodeID],
-        evaluators: list[tuple[NodeID, Callable, list[tuple[NodeID, float]]]]
+        evaluators: list[tuple[NodeID, Callable, list[tuple[NodeID, float]]]],
     ):
         self.id = id
         self.inputs = inputs

@@ -1,22 +1,14 @@
-from dataclasses import dataclass
-
-from neat.types import LinkID, NodeID
+from neat.types import GenomeID, LinkID, NodeID, SLink, SpeciesID
 
 
-@dataclass
 class InnovationRecord:
-    nodes_counter: int
-    nodes_record: dict[LinkID, NodeID]
-    links_counter: int
-    links_record: dict[tuple[NodeID, NodeID], LinkID]
-    species_counter: int = 0
-    genomes_counter: int = 0
-
     def __init__(self, inputs: int, outputs: int):
         self.nodes_counter = inputs + outputs
+        self.nodes_record: dict[LinkID, NodeID] = {}
         self.links_counter = 0
-        self.nodes_record = {}
-        self.links_record = {}
+        self.links_record: dict[SLink, LinkID] = {}
+        self.species_counter = 0
+        self.genomes_counter = 0
 
     def get_node_id(self, link_to_split: LinkID) -> NodeID:
         node_id = self.nodes_record.get(link_to_split)
@@ -41,12 +33,12 @@ class InnovationRecord:
         self.links_counter += 1
         return link_id
 
-    def get_species_id(self) -> int:
+    def get_species_id(self) -> SpeciesID:
         species_id = self.species_counter
         self.species_counter += 1
         return species_id
 
-    def get_genome_id(self) -> int:
+    def get_genome_id(self) -> GenomeID:
         genome_id = self.genomes_counter
         self.genomes_counter += 1
         return genome_id

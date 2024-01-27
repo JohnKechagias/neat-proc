@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import numpy as np
-from neat.genes import NodeType
 
+from neat.genes import NodeType
 from neat.genomes.genome import Genome
 
 from .network import Network
@@ -10,6 +10,17 @@ from .utils import get_feed_forward_layers
 
 
 class FeedForwardNetwork(Network):
+    def __repr__(self) -> str:
+        strings: list[str] = []
+
+        strings.append(f"Inputs: {self.inputs}")
+        strings.append(f"Output: {self.outputs}")
+
+        for eval in self.evaluators:
+            strings.append(str(eval))
+
+        return "\n".join(strings)
+
     @staticmethod
     def from_genome(genome: Genome) -> FeedForwardNetwork:
         input_nodes = genome.get_nodes_by_type(NodeType.INPUT)

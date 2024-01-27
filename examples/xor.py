@@ -1,10 +1,10 @@
+import inspect
 import os
 import sys
-import inspect
 
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parentdir = os.path.dirname(currentdir)
-sys.path.insert(0, parentdir) 
+sys.path.insert(0, parentdir)
 
 from pathlib import Path
 
@@ -28,7 +28,7 @@ def fitness_func(genome: neat.Genome, data) -> float:
         output = np.asarray(network.activate(input))
         loss += least_squares(output, correct_output)
 
-    return 4.0 - loss
+    return max(4.0 - loss, 0.0)
 
 
 def main():
@@ -44,13 +44,13 @@ def main():
         ([1.0, 1.0], [0.0]),
     ]
 
-    genome = population.run(fitness_func, inputs, 300)
+    genome = population.run(fitness_func, inputs, 200)
     print(f"The best genome is {genome.id} with fitness {genome.fitness:.3f}.")
     winner_net = neat.FeedForwardNetwork.from_genome(genome)
 
-    for i in inputs:
-        output = winner_net.activate(i[0])
-        print(f"{i[0]} -> {output}")
+    for input, correct_output in inputs:
+        output = winner_net.activate(np.asarray(input))
+        print(f"{input} -> {output} instead of {correct_output}")
 
 
 if __name__ == "__main__":

@@ -1,18 +1,16 @@
-from neat.networks.graph import GLink
-from neat.types import NodeID
+from neat.types import NodeID, SLink
 
 
 def required_for_output(
-    inputs: list[NodeID], outputs: list[NodeID], links: list[GLink]
+    inputs: list[NodeID],
+    outputs: list[NodeID],
+    links: list[SLink],
 ) -> set[NodeID]:
     """Collect the nodes whose state is required to compute the final network output(s).
-    :param inputs: list of the input identifiers
-    :param outputs: list of the output node identifiers
-    :param connections: list of (input, output) connections in the network.
-    NOTE: It is assumed that the input identifier set and the node identifier set are disjoint.
+    It is assumed that the input identifier set and the node identifier set are disjoint.
     By convention, the output node ids are always the same as the output index.
 
-    Returns a set of identifiers of required nodes.
+    Returns: The set or required nodes.
     """
     assert not set(inputs).intersection(outputs)
 
@@ -36,7 +34,9 @@ def required_for_output(
 
 
 def get_feed_forward_layers(
-    inputs: list[NodeID], outputs: list[NodeID], links: list[GLink]
+    inputs: list[NodeID],
+    outputs: list[NodeID],
+    links: list[SLink],
 ) -> list[set[NodeID]]:
     """Collect the layers whose members can be evaluated in parallel in a feed-forward network.
 

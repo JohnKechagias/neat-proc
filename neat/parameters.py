@@ -12,6 +12,7 @@ from neat.activations import ActivationFuncs
 from neat.aggregations import AggregationFuncs
 from neat.fitness import FitnessCriterionFuncs, LossFuncs
 from neat.genomes.connection_schemes import ConnectionSchemes
+from neat.stagnation import StagnationFuncs
 
 
 @dataclass
@@ -50,7 +51,8 @@ class ConfigSection:
         config = cls()
 
         for attr, attr_type in get_annotations(cls).items():
-            input_value = params.get(section, attr, fallback=None)
+            default_value = getattr(cls, attr, None)
+            input_value = params.get(section, attr, fallback=default_value)
             if input_value is None:
                 raise ValueError(f"Parameter '{attr}' is not defined in config file.")
 
@@ -93,7 +95,6 @@ class ConfigSection:
 
 
 class NEATParams(ConfigSection):
-    population: int
     reset_on_extinction: bool
 
 
@@ -106,18 +107,23 @@ class GenomeParams(ConfigSection):
     connection_scheme: ConnectionSchemes
     alternative_structural_mutations: bool
 
-    activation_default: ActivationFuncs
-    activation_options: list[ActivationFuncs]
-    activation_mutation_chance: Annotated[float, ValueRange(0.0, 1.0)]
+    activator_default: ActivationFuncs
+    activator_options: list[ActivationFuncs]
+    activator_mutation_chance: Annotated[float, ValueRange(0.0, 1.0)]
 
-    aggregation_default: AggregationFuncs
-    aggregation_options: list[AggregationFuncs]
-    aggregation_mutation_chance: Annotated[float, ValueRange(0.0, 1.0)]
+    aggregator_default: AggregationFuncs
+    aggregator_options: list[AggregationFuncs]
+    aggregator_mutation_chance: Annotated[float, ValueRange(0.0, 1.0)]
 
     link_mutation_chance: Annotated[float, ValueRange(0.0, 1.0)]
     link_addition_chance: Annotated[float, ValueRange(0.0, 1.0)]
     link_deletion_chance: Annotated[float, ValueRange(0.0, 1.0)]
     link_toggle_chance: Annotated[float, ValueRange(0.0, 1.0)]
+
+    enabled_default: bool
+    enabled_mutation_chance: Annotated[float, ValueRange(0.0, 1.0)]
+    frozen_default: bool
+    frozen_mutation_chance: Annotated[float, ValueRange(0.0, 1.0)]
 
     node_mutation_chance: Annotated[float, ValueRange(0.0, 1.0)]
     node_addition_chance: Annotated[float, ValueRange(0.0, 1.0)]
@@ -158,8 +164,11 @@ class SpeciationParams(ConfigSection):
     species_elitism: int
     max_stagnation: int
 
+    # stagnation_compute_func: StagnationFuncs
+    # stagnation_min_growth: float = 0.1
+
     survival_rate: Annotated[float, ValueRange(0.0, 1.0)]
-    elitism: int  # Can also be interpreted as the minimum size of a species.
+    elitism: int
 
 
 class EvaluationParams(ConfigSection):
@@ -171,11 +180,14 @@ class EvaluationParams(ConfigSection):
 class ReproductionParams(ConfigSection):
     crossover_rate: Annotated[float, ValueRange(0.0, 1.0)]
     inter_species_crossover_rate: Annotated[float, ValueRange(0.0, 1.0)]
+
+    population: int
     max_stagnation: int
     survival_rate: Annotated[float, ValueRange(0.0, 1.0)]
-    elitism: int  # Can also be interpreted as the minimum size of a species.
+
+    elitism: int
     elitism_threshold: int
-    population: int
+    min_species_size: int
 
 
 class Parameters:
