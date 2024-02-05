@@ -7,7 +7,6 @@ from neat.logging import Reporter
 from neat.parameters import Parameters
 from neat.reproduction import filter_stagnant_species, reproduce
 from neat.speciation import speciate
-from neat.types import InputData
 
 
 class Population:
@@ -20,8 +19,7 @@ class Population:
 
     def run(
         self,
-        fitness_func: Callable[[Genome, InputData], float],
-        input: InputData,
+        fitness_func: Callable[[Genome], float],
         times: Optional[int] = None,
     ) -> Genome:
         best_genome: Optional[Genome] = None
@@ -41,7 +39,7 @@ class Population:
             Reporter.start_generation(self.generation)
 
             for genome in genomes:
-                genome.fitness = fitness_func(genome, input)
+                genome.fitness = fitness_func(genome)
 
             genomes.sort(key=lambda g: g.fitness, reverse=True)
             candidate_genome = genomes[0]

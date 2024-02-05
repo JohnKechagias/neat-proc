@@ -1,6 +1,7 @@
 import inspect
 import os
 import sys
+from functools import partial
 
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parentdir = os.path.dirname(currentdir)
@@ -17,7 +18,7 @@ def least_squares(output: np.ndarray, correct_ouput: np.ndarray) -> float:
     return np.sum(np.square(output - correct_ouput))
 
 
-def fitness_func(genome: neat.Genome, data) -> float:
+def fitness_func(data, genome: neat.Genome) -> float:
     network = neat.FeedForwardNetwork.from_genome(genome)
     loss: float = 0.0
 
@@ -44,7 +45,8 @@ def main():
         ([1.0, 1.0], [0.0]),
     ]
 
-    genome = population.run(fitness_func, inputs, 200)
+    evaluator = partial(fitness_func, inputs)
+    genome = population.run(evaluator, 200)
     print(f"The best genome is {genome.id} with fitness {genome.fitness:.3f}.")
     winner_net = neat.FeedForwardNetwork.from_genome(genome)
 
