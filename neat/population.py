@@ -44,24 +44,20 @@ class Population:
                 genome.fitness = fitness_func(genome, input)
 
             genomes.sort(key=lambda g: g.fitness, reverse=True)
-            candidate_best_genome = genomes[0]
+            candidate_genome = genomes[0]
 
-            if (
-                best_genome is None
-                or candidate_best_genome.fitness > best_genome.fitness
-            ):
-                best_genome = copy.deepcopy(candidate_best_genome)
+            if best_genome is None or candidate_genome.fitness > best_genome.fitness:
+                best_genome = copy.deepcopy(candidate_genome)
 
             if best_genome.fitness >= params.evaluation.fitness_threshold:
                 break
 
             species = filter_stagnant_species(species, params.reproduction)
-            Reporter.end_generation(genomes, species)
-
             genomes = reproduce(species, params.reproduction)
             species = speciate(genomes, species, params.speciation, self.innov_record)
 
             Reporter.best_genome(best_genome, 0)
+            Reporter.end_generation(genomes, species)
             self.generation += 1
             iterations += 1
 

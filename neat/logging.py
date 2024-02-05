@@ -51,15 +51,15 @@ class Reporter:
         fit_std = stdev(fitnesses)
         print(f"Genomes Average fitness: {fit_mean:3.5f}")
         print(f"Genomes Standard deviation: {fit_std:3.5f}\n")
-
         print(cls.format_header("Species"))
+
         elapsed_time = time.time() - cls._generation_start_time
         cls._generation_times.append(elapsed_time)
         mean_time = mean(cls._generation_times)
 
         time_info = f"Generation time: {elapsed_time:.3f} sec ({mean_time:.3f} average)"
-        print(time_info)
         pop_info = f"Population of {len(genomes)} members in {len(species_set)} species"
+        print(time_info)
         print(pop_info)
 
         if not cls.show_species_details:

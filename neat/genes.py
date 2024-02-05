@@ -6,7 +6,9 @@ import random
 from dataclasses import dataclass
 from enum import Enum, StrEnum, auto
 from inspect import get_annotations
-from typing import Any, Callable, ClassVar, Self
+from typing import Any, Callable, ClassVar, Self, Type
+
+from numba import njit
 
 from neat.activations import ActivationFuncs, get_activation_func
 from neat.aggregations import AggregationFuncs, get_aggregation_func
@@ -21,21 +23,27 @@ class NodeType(StrEnum):
     OUTPUT = auto()
 
 
-class Gene:
-    def __init__(self, id: int):
-        self.id = id
+def gene(cls: Type) -> Type:
+    cls._annotations = get_annotations(cls, eval_str=True)
+    return dataclass(repr=False)(cls)
 
-    _excluded_attrs_from_mutation: ClassVar[list[str]] = [
+
+class Gene:
+    _excluded_attrs_from_mutation: ClassVar[set[str]] = {
         "id",
         "node_type",
         "in_node",
         "out_node",
-    ]
+    }
+    _annotations = {}
+
+    def __init__(self, id: int):
+        self.id = id
 
     def __repr__(self) -> str:
         attrs_strings: list[str] = []
 
-        for attr in get_annotations(self.__class__, eval_str=True).keys():
+        for attr in self._annotations.keys():
             value = getattr(self, attr)
 
             attrs_strings.append(f"{attr}={value}")
@@ -43,12 +51,13 @@ class Gene:
         content = ", ".join(attrs_strings)
         return f"{self.__class__.__name__}({content})"
 
+    @njit
     def distance(self, other: Self) -> float:
         """Returns the distance between the genes. Distance
         measures how different the genes are."""
         distance = 0.0
 
-        for attr, attr_type in get_annotations(self.__class__, eval_str=True).items():
+        for attr, attr_type in self._annotations.items():
             if attr in self._excluded_attrs_from_mutation:
                 continue
 
@@ -71,7 +80,7 @@ class Gene:
         assert self.id == other.id
 
         attrs = {}
-        for attr in get_annotations(self.__class__, eval_str=True).keys():
+        for attr in self._annotations.keys():
             if random.random() < 0.5:
                 attrs[attr] = getattr(self, attr)
             else:
@@ -80,7 +89,7 @@ class Gene:
         return self.__class__(**attrs)
 
     def mutate(self, params: GenomeParams):
-        for attr, attr_type in get_annotations(self.__class__, eval_str=True).items():
+        for attr, attr_type in self._annotations.items():
             if attr in self._excluded_attrs_from_mutation:
                 continue
 
@@ -156,7 +165,7 @@ class Gene:
     @classmethod
     def get_default_args(cls, params: GenomeParams) -> list[Any]:
         values = []
-        for attr, attr_type in get_annotations(cls, eval_str=True).items():
+        for attr, attr_type in cls._annotations.items():
             if attr in cls._excluded_attrs_from_mutation:
                 continue
 
@@ -203,7 +212,7 @@ class Gene:
         return getattr(params, f"{attr}_default")
 
 
-@dataclass(repr=False)
+@gene
 class Node(Gene):
     id: NodeID
     node_type: NodeType
@@ -248,7 +257,7 @@ class Node(Gene):
         return evaluate
 
 
-@dataclass(repr=False)
+@gene
 class Link(Gene):
     id: LinkID
     in_node: NodeID
