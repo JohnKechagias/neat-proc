@@ -79,7 +79,7 @@ class Reporter:
         print(f"\nStagnations: {cls._stagnation}")
 
     @classmethod
-    def best_genome(cls, genome: Genome, species: int):
+    def best_genome(cls, genome: Genome):
         print(
             f"\nBest genome is {genome.id} {genome.size}"
             f" with fitness {genome.fitness}\n"

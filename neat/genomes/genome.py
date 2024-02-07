@@ -12,12 +12,12 @@ from neat.utils import get_random_value
 
 class Genome:
     params: GenomeParams
-    input_keys = set((0, 1))
-    output_keys = set((2,))
 
     @classmethod
     def initialize_configuration(cls, params: GenomeParams):
         cls.params = params
+        cls.input_keys = set(range(params.inputs))
+        cls.output_keys = set(range(params.inputs, params.inputs + params.outputs))
 
     def __init__(
         self,
@@ -61,13 +61,11 @@ class Genome:
         input_nodes: dict[int, Node] = {}
         output_nodes: dict[int, Node] = {}
 
-        inputs = self.params.inputs
-        outputs = self.params.outputs
-        for node_id in range(inputs):
+        for node_id in self.input_keys:
             node = self.create_new_node(node_id, NodeType.INPUT)
             input_nodes[node_id] = node
 
-        for node_id in range(inputs, inputs + outputs):
+        for node_id in self.output_keys:
             node = self.create_new_node(node_id, NodeType.OUTPUT)
             output_nodes[node_id] = node
 

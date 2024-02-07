@@ -48,6 +48,7 @@ class Population:
             if best_genome is None or candidate_genome.fitness > best_genome.fitness:
                 best_genome = copy.deepcopy(candidate_genome)
 
+            Reporter.best_genome(best_genome)
             if best_genome.fitness >= params.evaluation.fitness_threshold:
                 break
 
@@ -55,7 +56,6 @@ class Population:
             genomes = reproduce(species, params.reproduction)
             species = speciate(genomes, species, params.speciation, self.innov_record)
 
-            Reporter.best_genome(best_genome, 0)
             Reporter.end_generation(genomes, species)
             self.generation += 1
             iterations += 1
