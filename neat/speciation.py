@@ -59,6 +59,10 @@ def select_new_representatives(
     return unspeciated, species_info
 
 
+def get_representatives(species_set: list[Species]) -> list[Genome]:
+    return [species.representative for species in species_set]
+
+
 def get_new_species(
     representative: Genome,
     innov_record: InnovationRecord,

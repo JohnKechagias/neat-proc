@@ -6,7 +6,7 @@ from neat.innovation import InnovationRecord
 from neat.logging import Reporter
 from neat.parameters import Parameters
 from neat.reproduction import filter_stagnant_species, reproduce
-from neat.speciation import speciate
+from neat.speciation import get_representatives, speciate
 
 
 class Population:
@@ -19,7 +19,7 @@ class Population:
 
     def run(
         self,
-        fitness_func: Callable[[Genome], float],
+        fitness_func: Callable[[Genome, list[Genome]], float],
         times: Optional[int] = None,
     ) -> Genome:
         best_genome: Optional[Genome] = None
@@ -38,8 +38,9 @@ class Population:
 
             Reporter.start_generation(self.generation)
 
+            representatatives = get_representatives(species)
             for genome in genomes:
-                genome.fitness = fitness_func(genome)
+                genome.fitness = fitness_func(genome, representatatives)
 
             genomes.sort(key=lambda g: g.fitness, reverse=True)
             candidate_genome = genomes[0]

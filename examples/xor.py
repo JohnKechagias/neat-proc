@@ -18,7 +18,9 @@ def least_squares(output: np.ndarray, correct_ouput: np.ndarray) -> float:
     return np.sum(np.square(output - correct_ouput))
 
 
-def fitness_func(data, genome: neat.Genome) -> float:
+def fitness_func(
+    data, genome: neat.Genome, representatives: list[neat.Genome]
+) -> float:
     network = neat.FeedForwardNetwork.from_genome(genome)
     loss: float = 0.0
 
