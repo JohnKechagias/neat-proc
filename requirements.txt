@@ -1,4 +1,2 @@
-arcade
 numpy
 numba
-PyYAML

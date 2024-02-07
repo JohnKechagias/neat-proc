@@ -1,0 +1,29 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "neat-proc"
+version = "0.1.0"
+dependencies = [
+  "numpy",
+  "numba",
+]
+requires-python = ">=3.11"
+authors = [
+  { name="John Kechagias", email="john.n.kechagias@gmail.com" },
+]
+description = "An implementation of the NEAT algorithm."
+readme = "README.md"
+license = {file = "LICENSE.txt"}
+classifiers = [
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+]
+
+[project.urls]
+Repository = "https://github.com/JohnKechagias/neat-proc.git"
+Issues = "https://github.com/JohnKechagias/neat-proc/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["neat"]
