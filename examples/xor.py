@@ -1,4 +1,5 @@
 import inspect
+import multiprocessing
 import os
 import sys
 from functools import partial
@@ -12,15 +13,14 @@ from pathlib import Path
 import numpy as np
 
 import neat
+from neat.evaluators import ParallelEvaluator
 
 
 def least_squares(output: np.ndarray, correct_ouput: np.ndarray) -> float:
     return np.sum(np.square(output - correct_ouput))
 
 
-def fitness_func(
-    data, genome: neat.Genome, representatives: list[neat.Genome]
-) -> float:
+def fitness_func(data, genome: neat.Genome, _) -> float:
     network = neat.FeedForwardNetwork.from_genome(genome)
     loss: float = 0.0
 
@@ -47,8 +47,10 @@ def main():
         ([1.0, 1.0], [0.0]),
     ]
 
-    evaluator = partial(fitness_func, inputs)
-    genome = population.run(evaluator, 200)
+    eval_func = partial(fitness_func, inputs)
+    evaluator = ParallelEvaluator(multiprocessing.cpu_count(), eval_func)
+
+    genome = population.run(evaluator.evaluate, 200)
     print(f"The best genome is {genome.id} with fitness {genome.fitness:.3f}.")
     winner_net = neat.FeedForwardNetwork.from_genome(genome)
 

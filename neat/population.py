@@ -19,7 +19,7 @@ class Population:
 
     def run(
         self,
-        fitness_func: Callable[[Genome, list[Genome]], float],
+        fitness_func: Callable[[list[Genome], list[Genome]], None],
         times: Optional[int] = None,
     ) -> Genome:
         best_genome: Optional[Genome] = None
@@ -33,15 +33,13 @@ class Population:
 
         iterations = 0
         while not found_optimal_network:
-            if times and iterations > times:
+            if times and iterations >= times:
                 break
 
             Reporter.start_generation(self.generation)
 
             representatatives = get_representatives(species)
-            for genome in genomes:
-                genome.fitness = fitness_func(genome, representatatives)
-
+            fitness_func(genomes, representatatives)
             genomes.sort(key=lambda g: g.fitness, reverse=True)
             candidate_genome = genomes[0]
 
