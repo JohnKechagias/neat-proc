@@ -1,4 +1,5 @@
 import copy
+import pickle
 from typing import Callable, Optional
 
 from neat.genomes.genome import Genome
@@ -48,6 +49,10 @@ class Population:
                 best_genome = copy.deepcopy(candidate_genome)
 
             self.reporter.best_genome(best_genome)
+
+            with open(f"generation_{self.generation}_winner.pkl", "wb") as f:
+                pickle.dump(best_genome, f)
+
             if best_genome.fitness >= params.evaluation.fitness_threshold:
                 break
 
@@ -56,6 +61,7 @@ class Population:
             species = speciate(genomes, species, params.speciation, self.innov_record)
 
             self.reporter.end_generation(genomes, species)
+            self.reporter.data.save_to_file(f"generation_{self.generation}_stats.pkl")
             self.generation += 1
             iterations += 1
 
