@@ -3,7 +3,7 @@ from typing import Callable, Optional
 
 from neat.genomes.genome import Genome
 from neat.innovation import InnovationRecord
-from neat.logging import Reporter
+from neat.logging import Reporter, StatisticalData
 from neat.parameters import Parameters
 from neat.reproduction import filter_stagnant_species, reproduce
 from neat.speciation import get_representatives, speciate
@@ -14,6 +14,7 @@ class Population:
         self.params = params
         self.generation: int
         self.innov_record: InnovationRecord
+        self.reporter = Reporter()
         self.reset()
         Genome.initialize_configuration(params.genome)
 
@@ -21,7 +22,7 @@ class Population:
         self,
         fitness_func: Callable[[list[Genome], list[Genome]], None],
         times: Optional[int] = None,
-    ) -> Genome:
+    ) -> tuple[Genome, StatisticalData]:
         best_genome: Optional[Genome] = None
         found_optimal_network = False
 
@@ -29,14 +30,14 @@ class Population:
         population = params.reproduction.population
         genomes = [self.get_new_genome(self.innov_record) for _ in range(population)]
         species = speciate(genomes, [], params.speciation, self.innov_record)
-        Reporter.initialize_training(params)
+        self.reporter.initialize_training(params)
 
         iterations = 0
         while not found_optimal_network:
-            if times and iterations >= times:
+            if times is not None and iterations > times:
                 break
 
-            Reporter.start_generation(self.generation)
+            self.reporter.start_generation(self.generation)
 
             representatatives = get_representatives(species)
             fitness_func(genomes, representatatives)
@@ -46,7 +47,7 @@ class Population:
             if best_genome is None or candidate_genome.fitness > best_genome.fitness:
                 best_genome = copy.deepcopy(candidate_genome)
 
-            Reporter.best_genome(best_genome)
+            self.reporter.best_genome(best_genome)
             if best_genome.fitness >= params.evaluation.fitness_threshold:
                 break
 
@@ -54,15 +55,16 @@ class Population:
             genomes = reproduce(species, params.reproduction)
             species = speciate(genomes, species, params.speciation, self.innov_record)
 
-            Reporter.end_generation(genomes, species)
+            self.reporter.end_generation(genomes, species)
             self.generation += 1
             iterations += 1
 
+        self.reporter.data.save_to_file()
         if best_genome is None:
             raise RuntimeError("Could not complete a full evolution cycle.")
 
         print(best_genome)
-        return best_genome
+        return best_genome, self.reporter.data
 
     def reset(self):
         self.generation = 0
@@ -71,7 +73,7 @@ class Population:
             self.params.genome.outputs,
         )
 
-        Reporter.reset()
+        self.reporter.reset()
 
     @staticmethod
     def get_new_genome(innov_record: InnovationRecord) -> Genome:
