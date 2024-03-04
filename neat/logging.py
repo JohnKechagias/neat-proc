@@ -32,6 +32,7 @@ class StatisticalData:
     generation_times: list[float] = field(default_factory=lambda: [])
     average_fitnesses: list[float] = field(default_factory=lambda: [])
     standard_deviations: list[float] = field(default_factory=lambda: [])
+    best_genome_fitnesses: list = field(default_factory=lambda: [])
     species_info: list = field(default_factory=lambda: [])
 
     def save_to_file(self, filepath: str = "stats.pkl"):
@@ -107,6 +108,7 @@ class Reporter:
             f"\nBest genome is {genome.id} {genome.size}"
             f" with fitness {genome.fitness}\n"
         )
+        self.data.best_genome_fitnesses.append((genome.fitness, genome.size))
 
     def stagnant_species(self, species: int, size: int):
         self.data.stagnations += 1

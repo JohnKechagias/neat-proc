@@ -227,9 +227,8 @@ class Genome:
 
     @property
     def size(self):
-        """
-        Returns genome 'complexity', taken to be
-        (number of nodes, number of enabled connections)
+        """Returns genome 'complexity', taken to be
+        (number of nodes, number of enabled connections).
         """
         num_enabled_connections = sum([1 for l in self.links.values() if l.enabled])
         return len(self.nodes), num_enabled_connections
