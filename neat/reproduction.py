@@ -12,12 +12,13 @@ from neat.utils import mean
 def filter_stagnant_species(
     species_set: list[Species],
     params: ReproductionParams,
+    reporter: Reporter,
 ) -> list[Species]:
     is_stagnant = lambda s: s.stagnant > params.max_stagnation
     remaining_species: list[Species] = []
     for species in species_set:
         if is_stagnant(species):
-            Reporter.stagnant_species(species.id, species.size)
+            reporter.stagnant_species(species.id, species.size)
             continue
 
         remaining_species.append(species)

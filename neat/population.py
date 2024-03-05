@@ -15,7 +15,6 @@ class Population:
         self.params = params
         self.generation: int
         self.innov_record: InnovationRecord
-        self.reporter = Reporter()
         self.reset()
         Genome.initialize_configuration(params.genome)
 
@@ -31,14 +30,15 @@ class Population:
         population = params.reproduction.population
         genomes = [self.get_new_genome(self.innov_record) for _ in range(population)]
         species = speciate(genomes, [], params.speciation, self.innov_record)
-        self.reporter.initialize_training(params)
+        reporter = Reporter()
+        reporter.initialize_training(params)
 
         iterations = 0
         while not found_optimal_network:
             if times is not None and iterations > times:
                 break
 
-            self.reporter.start_generation(self.generation)
+            reporter.start_generation(self.generation)
 
             representatatives = get_representatives(species)
             fitness_func(genomes, representatatives)
@@ -48,7 +48,7 @@ class Population:
             if best_genome is None or candidate_genome.fitness > best_genome.fitness:
                 best_genome = copy.deepcopy(candidate_genome)
 
-            self.reporter.best_genome(best_genome)
+            reporter.best_genome(best_genome)
 
             with open(f"generation_{self.generation}_winner.pkl", "wb") as f:
                 pickle.dump(best_genome, f)
@@ -56,21 +56,21 @@ class Population:
             if best_genome.fitness >= params.evaluation.fitness_threshold:
                 break
 
-            species = filter_stagnant_species(species, params.reproduction)
+            species = filter_stagnant_species(species, params.reproduction, reporter)
             genomes = reproduce(species, params.reproduction)
             species = speciate(genomes, species, params.speciation, self.innov_record)
 
-            self.reporter.end_generation(genomes, species)
-            self.reporter.data.save_to_file(f"generation_{self.generation}_stats.pkl")
+            reporter.end_generation(genomes, species)
+            reporter.data.save_to_file(f"generation_{self.generation}_stats.pkl")
             self.generation += 1
             iterations += 1
 
-        self.reporter.data.save_to_file()
+        reporter.data.save_to_file()
         if best_genome is None:
             raise RuntimeError("Could not complete a full evolution cycle.")
 
         print(best_genome)
-        return best_genome, self.reporter.data
+        return best_genome, reporter.data
 
     def reset(self):
         self.generation = 0
@@ -78,8 +78,6 @@ class Population:
             self.params.genome.inputs,
             self.params.genome.outputs,
         )
-
-        self.reporter.reset()
 
     @staticmethod
     def get_new_genome(innov_record: InnovationRecord) -> Genome:
