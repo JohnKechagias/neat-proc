@@ -37,7 +37,7 @@ class CaseInsensitiveDict(collections.UserDict):
         """Converts the key to lower case and replaces camel case and
         spaces with snake case.
 
-        >>> convert_to_snake_case("ThisIs ASentence")
+        >>> convert_to_snake_case("This Is ASentence")
         "this_is_a_sentence"
         """
         key_words = re.sub(r"([A-Z][a-z])", r" \1", key).split()
@@ -191,6 +191,12 @@ class ReproductionParams(ConfigSection):
 
 
 class Parameters:
+    neat: NEATParams
+    genome: GenomeParams
+    speciation: SpeciationParams
+    evaluation: EvaluationParams
+    reproduction: ReproductionParams
+
     def __init__(self, config_file: Path):
         params = ConfigParser(dict_type=CaseInsensitiveDict)
         params.read(config_file)
@@ -211,9 +217,3 @@ class Parameters:
             repr.append(f"\n{str(value)}")
 
         return "\n".join(repr)
-
-    neat: NEATParams
-    genome: GenomeParams
-    speciation: SpeciationParams
-    evaluation: EvaluationParams
-    reproduction: ReproductionParams
