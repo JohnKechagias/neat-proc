@@ -1,0 +1,27 @@
+\documentclass[12pt]{article}
+\begin{document}
+
+\section*{Abstract}
+
+An experiment was conducted where neural networks are trained throught the use of the 
+NEAT algorithm and self-play to learn a deterministic game resembling checkers. In 
+greater detail, multilayer feedfoward neural networks were used to evaluate alternative
+bord positions and make moves based on the minmax search algorithm.
+
+\section*{Implementation Specification}
+
+\section*{Game Rules}
+
+The game is played on a five by five board (see Fig 1). There are two players, denoted
+as "red" and "blue". Each board tile can hold a maximum of ten pieces. We say that a 
+player owns a tile when he pieces on it. Players starts on opposite corners of the 
+board with one pop each. The blue player moves first and then play alternates between 
+sides. There are two kind of moves available to each player named "move" and "reproduction". Firstly, he can select 
+any number of his pieces that exist on the same tile and move them to an adjacent one, 
+either diagonally or horizontally. Secondly, he can choose any tile that one, has pieces
+on and second, the number of pieces is less that the maximum one and add one piece to it.
+When a player moves pieces to a tile that contains pieces of the opponent, in other words attacks a tile that is owned
+by the opponent, the number of tiles
+of 
+
+\end{document}
