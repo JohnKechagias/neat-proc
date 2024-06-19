@@ -12,7 +12,6 @@ from neat.activations import ActivationFuncs
 from neat.aggregations import AggregationFuncs
 from neat.fitness import FitnessCriterionFuncs, LossFuncs
 from neat.genomes.connection_schemes import ConnectionSchemes
-from neat.stagnation import StagnationFuncs
 
 
 @dataclass
@@ -159,14 +158,7 @@ class SpeciationParams(ConfigSection):
     compatibility_disjoint_coefficient: float
     compatibility_weight_coefficient: float
     compatibility_threshold: float
-
-    species_fitness_func: str
-    species_elitism: int
     max_stagnation: int
-
-    # stagnation_compute_func: StagnationFuncs
-    # stagnation_min_growth: float = 0.1
-
     survival_rate: Annotated[float, ValueRange(0.0, 1.0)]
     elitism: int
 
@@ -174,7 +166,6 @@ class SpeciationParams(ConfigSection):
 class EvaluationParams(ConfigSection):
     fitness_threshold: float
     fitness_criterion: FitnessCriterionFuncs
-    loss_function: LossFuncs
 
 
 class ReproductionParams(ConfigSection):

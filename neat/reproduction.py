@@ -91,7 +91,7 @@ def reproduce(species_set: list[Species], params: ReproductionParams) -> list[Ge
             else:
                 id = parent1.innov_record.get_genome_id()
                 # We need to copy nodes and links because if the parent is an elite it
-                # will be transfered into the next generation and when we mutate him we
+                # will be transferred into the next generation and when we mutate him we
                 # will also mutate the child by mistake.
                 child = Genome(
                     id,

@@ -50,7 +50,7 @@ def main():
     eval_func = partial(fitness_func, inputs)
     evaluator = ParallelEvaluator(multiprocessing.cpu_count(), eval_func)
 
-    genome = population.run(evaluator.evaluate, 200)
+    genome, _ = population.run(evaluator.evaluate, 50)
     print(f"The best genome is {genome.id} with fitness {genome.fitness:.3f}.")
     winner_net = neat.FeedForwardNetwork.from_genome(genome)
 

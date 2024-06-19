@@ -4,21 +4,31 @@ build-backend = "hatchling.build"
 
 [project]
 name = "neat-proc"
-version = "0.1.0"
-dependencies = [
-  "numpy",
-  "numba",
-]
+version = "1.0.1"
+description = "An implementation of the NEAT algorithm."
 requires-python = ">=3.11"
 authors = [
-  { name="John Kechagias", email="john.n.kechagias@gmail.com" },
+    {name = "John Kechagias", email = "john.kechagias@protonmail.com"},
 ]
-description = "An implementation of the NEAT algorithm."
 readme = "README.md"
 license = {file = "LICENSE.txt"}
 classifiers = [
-  "Programming Language :: Python :: 3.11",
-  "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "numba==0.58.1",
+    "numpy==1.26.3",
+]
+
+[project.optional-dependencies]
+tests = [
+    "pytest",
+    "pytest-cov",
+]
+lint = [
+    "black",
+    "isort",
 ]
 
 [project.urls]

@@ -56,8 +56,6 @@ weight_mutation_power = 0.5
 compatibility_disjoint_coefficient = 1.0
 compatibility_weight_coefficient = 0.6
 compatibility_threshold = 3.0
-species_fitness_func = max
-species_elitism = 100
 max_stagnation = 5
 survival_rate = 0.2
 elitism = 5
@@ -65,7 +63,6 @@ elitism = 5
 [EvaluationParameters]
 fitness_threshold = 3.9
 fitness_criterion = max
-loss_function = least_squares
 
 [ReproductionParameters]
 crossover_rate = 0.4"""
